@@ -12,12 +12,12 @@ http://<domínio>:<porta>/<caminho>/<idnode>
 A resposta da requisição é em formado JSON como o exemplo a baixo:
 ```json
 {
+  "id": 1,
   "0": true,
-  "1": false,
-  "2": false,
-  "3": true
+  "1": false
 }
 ```
 ### Dependências
-   - [ArduinoJson v6](https://arduinojson.org/v6/doc/installation/)
    - [ESP8266 Community](https://www.filipeflop.com/blog/programar-nodemcu-com-ide-arduino/)
+   - [ArduinoJson v6](https://arduinojson.org/v6/doc/installation/)
+   - [Regexp](https://www.gammon.com.au/forum/?id=11063)
