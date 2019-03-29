@@ -1,1 +1,23 @@
-# Dispositivo-Handsy
+# Dispositivo Handsy
+
+Handsy é um dispositivo com o intuito de facilitar a vida das pessoas. Como forma de interação o disposito é controlado remotamente através do aplicatição mobile [Handsy](https://github.com/nitaicharan/APP-Handsy).
+Handsy foi criado utilizando um NodeMCU, e um relé para acionar dispositivos.
+
+Handsy funciona através do estilo de arquitetura *Representational State Transfer (REST)* através de requisições a servidores WEB para atualizar os estados dos dispositivos relé (portas) gerenciados pelo componente NodeMCU.
+
+Requesições são realizadas através do verbo `GET` do protocolo *HTTP* como o exemplo abaixo:
+```
+http://<domínio>:<porta>/<caminho>/<idnode>
+```
+A resposta da requisição é em formado JSOM como o exemplo a baixo:
+```json
+{
+  "0": true,
+  "1": false,
+  "2": false,
+  "3": true
+}
+```
+### Dependências
+   - [ArduinoJson v6](https://arduinojson.org/v6/doc/installation/)
+   - [ESP8266 Community](https://www.filipeflop.com/blog/programar-nodemcu-com-ide-arduino/)
