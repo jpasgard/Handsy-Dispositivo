@@ -1,11 +1,11 @@
-#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
+#include <Regexp.h>
 
 // Constantes servidor
-const char* SV_DOMINIO = "echo.jsontest.com";
+const char* SV_DOMINIO = "dominio";
 const int   SV_PORTA = 80;
-const char* SV_CAMINHO  = "/0/1/1/1";
-const char* SV_HTTP_RESPOSTA = "HTTP/1.0";
+const char* SV_CAMINHO  = "caminho";
 
 // Constantes estado da saida
 const int ON = LOW;
@@ -14,7 +14,7 @@ const int OFF = HIGH;
 // Constantes saida
 const int QTD_SAIDAS = 2;
 const int SAIDAS[QTD_SAIDAS] = {D1, D2};
-const int JSON_TAMANHO = JSON_OBJECT_SIZE(QTD_SAIDAS) + (QTD_SAIDAS * 2) + (QTD_SAIDAS * 1);
+const int JSON_TAMANHO = JSON_OBJECT_SIZE(QTD_SAIDAS + 1) + (QTD_SAIDAS * 2) + (QTD_SAIDAS * 1) + 3;
 
 // Struct configurações de rede
 struct configWifi {
@@ -23,7 +23,8 @@ struct configWifi {
 };
 
 // Declaração de variáveis
-boolean estadoAtual[QTD_SAIDAS];
+boolean    estadoAtual[QTD_SAIDAS];
+MatchState ms;
 
 // Setup Inicial
 void setup() {
@@ -122,7 +123,7 @@ boolean getEstadoServer(boolean* estado) {
     }
 
     // Envio da requisição HTTP
-    client.printf("GET %s %s\n", SV_CAMINHO, SV_HTTP_RESPOSTA);
+    client.printf("GET /%s HTTP/1.0\n", SV_CAMINHO);
     client.printf("Host: %s\n", SV_DOMINIO);
     client.println("Connection: close");
     if (client.println() == 0) {
@@ -133,7 +134,9 @@ boolean getEstadoServer(boolean* estado) {
     // Checagem do status HTTP
     char status[32] = {0};
     client.readBytesUntil('\r', status, sizeof(status));
-        if (strcmp(status, "HTTP/1.0 200 OK") != 0) {
+    ms.Target(status);
+    boolean result = (ms.Match("HTTP\/.+ 200 OK")? true:false);
+    if (!result) {
         Serial.printf("Resposta inesperada: %s\n", status);
         return false;
     }
