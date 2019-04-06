@@ -20,4 +20,3 @@ A resposta da requisição é em formado JSON como o exemplo a baixo:
 ### Dependências
    - [ESP8266 Community](https://www.filipeflop.com/blog/programar-nodemcu-com-ide-arduino/)
    - [ArduinoJson v6](https://arduinojson.org/v6/doc/installation/)
-   - [Regexp](https://www.gammon.com.au/forum/?id=11063)

@@ -1,11 +1,9 @@
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
-#include <Regexp.h>
 
 // Constantes servidor
-const char* SV_DOMINIO = "dominio";
-const int   SV_PORTA = 80;
-const char* SV_CAMINHO  = "caminho";
+const char* SV_URL = "http://192.168.0.11:3000/node/1";
 
 // Constantes estado da saida
 const int ON = LOW;
@@ -14,7 +12,7 @@ const int OFF = HIGH;
 // Constantes saida
 const int QTD_SAIDAS = 2;
 const int SAIDAS[QTD_SAIDAS] = {D1, D2};
-const int JSON_TAMANHO = JSON_OBJECT_SIZE(QTD_SAIDAS + 1) + (QTD_SAIDAS * 2) + (QTD_SAIDAS * 1) + 3;
+const int JSON_TAMANHO = JSON_OBJECT_SIZE(QTD_SAIDAS + 1) + (QTD_SAIDAS * 3) + QTD_SAIDAS + 1;
 
 // Struct configurações de rede
 struct configWifi {
@@ -23,16 +21,15 @@ struct configWifi {
 };
 
 // Declaração de variáveis
-boolean    estadoAtual[QTD_SAIDAS];
-MatchState ms;
+boolean estadoAtual[QTD_SAIDAS] = {OFF};
 
 // Setup Inicial
 void setup() {
     // Inicialização as saidas
     for (int i = 0; i < QTD_SAIDAS; i++) {
         pinMode(SAIDAS[i], OUTPUT);
-        digitalWrite(SAIDAS[i], OFF);
     }
+    setEstadoSaidas(estadoAtual);
 
     // Inicialização da porta Serial
     Serial.begin(115200);
@@ -111,46 +108,29 @@ void wiFiPrint() {
  * @return true caso consiga pegar os valores do servidor, false caso não consiga.
  */
 boolean getEstadoServer(boolean* estado) {
-    // Conexão com servidor HTTP
     WiFiClient client;
+    HTTPClient http;
 
+    // Conexão com servidor HTTP
     client.setTimeout(1000);
-    if (client.connect(SV_DOMINIO, SV_PORTA)) {
-        Serial.printf("Conectado ao servidor HTTP: %s:%d\n", SV_DOMINIO, SV_PORTA);
+    boolean conexao = http.begin(client, SV_URL);
+    if (conexao) {
+        Serial.println("Conectado ao servidor");
     } else {
-        Serial.printf("Falha ao conectar ao servidor HTTP: %s:%d\n", SV_DOMINIO, SV_PORTA);
-        return false;
-    }
-
-    // Envio da requisição HTTP
-    client.printf("GET /%s HTTP/1.0\n", SV_CAMINHO);
-    client.printf("Host: %s\n", SV_DOMINIO);
-    client.println("Connection: close");
-    if (client.println() == 0) {
-        Serial.println("Falha ao enviar requisicao HTTP");
+        Serial.println("Falha ao conectar ao servidor");
         return false;
     }
 
     // Checagem do status HTTP
-    char status[32] = {0};
-    client.readBytesUntil('\r', status, sizeof(status));
-    ms.Target(status);
-    boolean result = (ms.Match("HTTP\/.+ 200 OK")? true:false);
-    if (!result) {
-        Serial.printf("Resposta inesperada: %s\n", status);
-        return false;
-    }
-
-    // Pular cabeçalho HTTP
-    char endOfHeaders[] = "\r\n\r\n";
-    if (!client.find(endOfHeaders)) {
-        Serial.println("Resposta invalida");
+    int httpCode = http.GET();
+    if (httpCode != HTTP_CODE_OK) {
         return false;
     }
 
     // Desserialização do JSON
+    String payload = http.getString();
     DynamicJsonDocument json(JSON_TAMANHO);
-    DeserializationError error = deserializeJson(json, client);
+    DeserializationError error = deserializeJson(json, payload);
     if (error) {
         Serial.print("Falha durante desserializacao do JSON: ");
         Serial.println(error.c_str());
@@ -165,6 +145,7 @@ boolean getEstadoServer(boolean* estado) {
     }
     
     // Disconectar
+    http.end();
     client.stop();
 
     return true;
