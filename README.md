@@ -13,8 +13,7 @@ A resposta da requisição é em formado JSON como o exemplo a baixo:
 ```json
 {
   "id": 1,
-  "0": true,
-  "1": false
+  "status": true
 }
 ```
 ### Dependências

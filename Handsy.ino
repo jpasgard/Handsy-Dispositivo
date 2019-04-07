@@ -4,15 +4,14 @@
 
 // Constantes servidor
 const char* SV_URL = "http://192.168.0.11:3000/node/1";
+const int   SV_JSON_TAM = JSON_OBJECT_SIZE(2) + 10;
 
 // Constantes estado da saida
 const int ON = LOW;
 const int OFF = HIGH;
 
-// Constantes saida
-const int QTD_SAIDAS = 2;
-const int SAIDAS[QTD_SAIDAS] = {D1, D2};
-const int JSON_TAMANHO = JSON_OBJECT_SIZE(QTD_SAIDAS + 1) + (QTD_SAIDAS * 3) + QTD_SAIDAS + 1;
+// Constante saida
+const int SAIDA = D1;
 
 // Struct configurações de rede
 struct configWifi {
@@ -21,15 +20,14 @@ struct configWifi {
 };
 
 // Declaração de variáveis
-boolean estadoAtual[QTD_SAIDAS] = {OFF};
+boolean estadoAtual = false;
+boolean estadoServidor = false;
 
 // Setup Inicial
 void setup() {
-    // Inicialização as saidas
-    for (int i = 0; i < QTD_SAIDAS; i++) {
-        pinMode(SAIDAS[i], OUTPUT);
-    }
-    setEstadoSaidas(estadoAtual);
+    // Inicialização da saida
+    pinMode(SAIDA, OUTPUT);
+    digitalWrite(SAIDA, OFF);
 
     // Inicialização da porta Serial
     Serial.begin(115200);
@@ -39,7 +37,7 @@ void setup() {
 
     // Configuração rede WiFi
     WiFi.mode(WIFI_STA);
-    WiFi.setAutoConnect(true);
+    WiFi.setAutoReconnect(true);
     configWifi config {
         "WiFi",
         "01234567"
@@ -63,13 +61,12 @@ void loop() {
     }
 
     // Buscando status no servidor
-    boolean estadoServer[QTD_SAIDAS];
-    if (!getEstadoServer(estadoServer)){
+    if (!getEstadoServer(&estadoServidor)){
         return;
     }
 
-    // Atulizando o estado nas saidas
-    setEstadoSaidas(estadoServer);
+    // Atualizando o estado da saida
+    setEstadoSaidas();
 }
 
 /**
@@ -96,7 +93,7 @@ boolean wiFiConectar(configWifi config) {
  */
 void wiFiPrint() {
     Serial.print("Conectado a rede WiFi\n\tSSID: ");
-    Serial.println(WiFi.SSID());
+    Serial.println(WiFi.SSID().c_str());
     Serial.print("\t  IP: ");
     Serial.println(WiFi.localIP());
 }
@@ -104,10 +101,10 @@ void wiFiPrint() {
 /**
  * Pega o estado atual das saidas no servidor.
  * 
- * @param estado vetor de boolean que sera salvo os valores pego do servidor.
+ * @param  estado ponteiro boolean que sera salvo o valor pego do servidor.
  * @return true caso consiga pegar os valores do servidor, false caso não consiga.
  */
-boolean getEstadoServer(boolean* estado) {
+boolean getEstadoServer(boolean *estado) {
     WiFiClient client;
     HTTPClient http;
 
@@ -129,21 +126,16 @@ boolean getEstadoServer(boolean* estado) {
 
     // Desserialização do JSON
     String payload = http.getString();
-    DynamicJsonDocument json(JSON_TAMANHO);
+    DynamicJsonDocument json(SV_JSON_TAM);
     DeserializationError error = deserializeJson(json, payload);
     if (error) {
-        Serial.print("Falha durante desserializacao do JSON: ");
-        Serial.println(error.c_str());
+        Serial.println("Falha durante desserializacao do JSON: ");
         return false;
     }
 
     // Extração de valores
-    for (int i = 0; i < QTD_SAIDAS; i++) {
-        char chave[2] = "0";
-        chave[0] += i;
-        estado[i] = json[chave].as<int>();
-    }
-    
+    *estado = json["status"].as<bool>();
+
     // Disconectar
     http.end();
     client.stop();
@@ -152,15 +144,11 @@ boolean getEstadoServer(boolean* estado) {
 }
 
 /**
- * Altera o estado das saidas.
- * 
- * @param novoEstado vetor com os estados que vai ser alterado.
+ * Altera o estado da saida.
  */
-void setEstadoSaidas(boolean* novoEstado) {
-    for (int i = 0; i < QTD_SAIDAS; i++) {
-        if (estadoAtual[i] != novoEstado[i]) {
-            estadoAtual[i] = novoEstado[i];
-            digitalWrite(SAIDAS[i], novoEstado[i] ? ON:OFF);
-        }
+void setEstadoSaidas() {
+    if (estadoAtual != estadoServidor) {
+        estadoAtual = estadoServidor;
+        digitalWrite(SAIDA, estadoServidor ? ON:OFF);
     }
 }
