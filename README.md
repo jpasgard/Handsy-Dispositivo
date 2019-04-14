@@ -1,4 +1,4 @@
-# Dispositivo Handsy
+# Handsy-Dispositivo
 
 Handsy é um dispositivo com o intuito de facilitar a vida das pessoas. Como forma de interação o dispositivo é controlado remotamente através do aplicação mobile [Handsy](https://github.com/nitaicharan/APP-Handsy).
 Handsy foi criado utilizando um NodeMCU, e um relé para acionar dispositivos.
@@ -13,8 +13,7 @@ A resposta da requisição é em formado JSON como o exemplo a baixo:
 ```json
 {
   "id": 1,
-  "0": true,
-  "1": false
+  "status": true
 }
 ```
 ### Dependências
